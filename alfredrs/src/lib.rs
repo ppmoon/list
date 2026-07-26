@@ -7,6 +7,7 @@ pub mod config;
 pub mod engine;
 pub mod hotkey;
 pub mod model;
+pub mod paths;
 pub mod providers;
 pub mod ranking;
 pub mod ui;

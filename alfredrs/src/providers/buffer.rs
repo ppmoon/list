@@ -3,7 +3,7 @@
 use crate::config::Config;
 use crate::model::{Action, ItemKind, Query, ResultItem};
 use crate::providers::Provider;
-use crate::ranking::{data_dir, ensure_data_dir};
+use crate::paths::{data_dir, ensure_data_dir};
 use serde::{Deserialize, Serialize};
 use std::path::PathBuf;
 use std::sync::Mutex;
@@ -58,6 +58,10 @@ impl BufferProvider {
 impl Provider for BufferProvider {
     fn name(&self) -> &'static str {
         "buffer"
+    }
+
+    fn keywords(&self) -> &[&'static str] {
+        &["buf"]
     }
 
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {

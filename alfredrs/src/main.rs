@@ -2,13 +2,10 @@
 
 use alfredrs::config::Config;
 use alfredrs::engine::Engine;
-use alfredrs::model::Query;
 use alfredrs::providers::buffer::FileBuffer;
 use alfredrs::providers::clipboard::ClipboardProvider;
 use alfredrs::providers::stats::StatsProvider;
 use alfredrs::providers::workflows::WorkflowProvider;
-use alfredrs::providers::ProviderSet;
-use alfredrs::ranking::Ranker;
 use alfredrs::ui::run_launcher;
 use anyhow::Context;
 use std::env;
@@ -31,11 +28,8 @@ fn main() -> anyhow::Result<()> {
         }
         "search" => {
             let q = args.join(" ");
-            let config = Config::load_or_default()?;
-            let usage = StatsProvider::load();
-            let providers = ProviderSet::builtin();
-            let ranker = Ranker::new();
-            let results = providers.search(&Query::parse(q), &config, &usage, &ranker);
+            let engine = Engine::new()?;
+            let results = engine.search_query(&q);
             for (i, item) in results.iter().take(20).enumerate() {
                 println!(
                     "{:>2}. [{}] {} — {}",
@@ -51,7 +45,7 @@ fn main() -> anyhow::Result<()> {
             let mut engine = Engine::new()?;
             engine.set_query(q);
             engine.activate()?;
-            if let Some(text) = engine.large_type {
+            if let Some(text) = engine.large_type_text() {
                 println!("{text}");
             }
         }
@@ -110,7 +104,7 @@ fn main() -> anyhow::Result<()> {
                 for action in WorkflowProvider::run(wf, &arg)? {
                     engine.execute(action)?;
                 }
-                if let Some(text) = engine.large_type {
+                if let Some(text) = engine.large_type_text() {
                     println!("{text}");
                 }
             }

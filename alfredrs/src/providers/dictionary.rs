@@ -91,6 +91,10 @@ impl Provider for DictionaryProvider {
         "dictionary"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &["define", "spell"]
+    }
+
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
         let (mode, word) = match query.keyword.as_deref() {
             Some("define") => ("define", query.argument.as_str()),

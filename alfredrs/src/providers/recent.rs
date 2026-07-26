@@ -56,6 +56,10 @@ impl Provider for RecentProvider {
         "recent"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &["recent"]
+    }
+
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
         let needle = match query.keyword.as_deref() {
             Some("recent") => query.argument.to_lowercase(),

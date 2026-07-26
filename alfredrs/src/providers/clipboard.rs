@@ -3,7 +3,7 @@
 use crate::config::Config;
 use crate::model::{Action, ItemKind, Query, ResultItem};
 use crate::providers::Provider;
-use crate::ranking::{data_dir, ensure_data_dir};
+use crate::paths::{data_dir, ensure_data_dir};
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
@@ -101,6 +101,10 @@ fn classify(text: &str) -> &'static str {
 impl Provider for ClipboardProvider {
     fn name(&self) -> &'static str {
         "clipboard"
+    }
+
+    fn keywords(&self) -> &[&'static str] {
+        &["clip", "cb"]
     }
 
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {

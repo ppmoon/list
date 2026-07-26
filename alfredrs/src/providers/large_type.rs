@@ -11,6 +11,10 @@ impl Provider for LargeTypeProvider {
         "large_type"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &["large"]
+    }
+
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
         let text = match query.keyword.as_deref() {
             Some("large") => query.argument.clone(),

@@ -4,7 +4,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
-use crate::ranking::{ensure_data_dir, data_dir, UsageStats};
+use crate::paths::{data_dir, ensure_data_dir};
+use crate::ranking::UsageStats;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct Theme {
@@ -193,9 +194,18 @@ impl Config {
 
     /// Export preferences pack for sync/backup (Alfred Preferences Sync analogue).
     pub fn export_sync_pack(&self, usage: &UsageStats, dest: &Path) -> anyhow::Result<()> {
+        use crate::providers::clipboard::ClipboardProvider;
+        use crate::providers::contacts::ContactsProvider;
+        use crate::providers::snippets::SnippetsProvider;
+        use crate::providers::workflows::WorkflowProvider;
+
         let pack = SyncPack {
             config: self.clone(),
             usage: usage.clone(),
+            snippets: Some(SnippetsProvider::load()),
+            workflows: Some(WorkflowProvider::load_all()),
+            contacts: Some(ContactsProvider::load(self.contacts_path.as_deref())),
+            clipboard: Some(ClipboardProvider::load()),
             exported_at: chrono::Utc::now().to_rfc3339(),
         };
         if let Some(parent) = dest.parent() {
@@ -206,17 +216,75 @@ impl Config {
     }
 
     pub fn import_sync_pack(src: &Path) -> anyhow::Result<(Self, UsageStats)> {
+        use crate::providers::clipboard::ClipboardProvider;
+        use crate::providers::contacts::ContactsProvider;
+        use crate::providers::snippets::SnippetsProvider;
+        use crate::providers::workflows::WorkflowProvider;
+
         let text = std::fs::read_to_string(src)?;
         let pack: SyncPack = serde_json::from_str(&text)?;
         pack.config.save()?;
+        if let Some(snippets) = &pack.snippets {
+            SnippetsProvider::save(snippets)?;
+        }
+        if let Some(workflows) = &pack.workflows {
+            let dir = WorkflowProvider::dir();
+            std::fs::create_dir_all(&dir)?;
+            for wf in workflows {
+                let path = dir.join(format!("{}.json", wf.id));
+                std::fs::write(path, serde_json::to_string_pretty(wf)?)?;
+            }
+        }
+        if let Some(contacts) = &pack.contacts {
+            let path = pack
+                .config
+                .contacts_path
+                .clone()
+                .unwrap_or_else(ContactsProvider::default_path);
+            write_contacts_vcf(&path, contacts)?;
+        }
+        if let Some(clipboard) = &pack.clipboard {
+            ClipboardProvider::save(clipboard)?;
+        }
         Ok((pack.config, pack.usage))
     }
+}
+
+fn write_contacts_vcf(path: &Path, contacts: &[crate::providers::contacts::Contact]) -> anyhow::Result<()> {
+    let mut out = String::new();
+    for c in contacts {
+        out.push_str("BEGIN:VCARD\nVERSION:3.0\n");
+        out.push_str(&format!("FN:{}\n", c.name));
+        if let Some(email) = &c.email {
+            out.push_str(&format!("EMAIL:{email}\n"));
+        }
+        if let Some(phone) = &c.phone {
+            out.push_str(&format!("TEL:{phone}\n"));
+        }
+        if let Some(org) = &c.organization {
+            out.push_str(&format!("ORG:{org}\n"));
+        }
+        out.push_str("END:VCARD\n");
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    std::fs::write(path, out)?;
+    Ok(())
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SyncPack {
     pub config: Config,
     pub usage: UsageStats,
+    #[serde(default)]
+    pub snippets: Option<Vec<crate::providers::snippets::Snippet>>,
+    #[serde(default)]
+    pub workflows: Option<Vec<crate::providers::workflows::Workflow>>,
+    #[serde(default)]
+    pub contacts: Option<Vec<crate::providers::contacts::Contact>>,
+    #[serde(default)]
+    pub clipboard: Option<Vec<crate::providers::clipboard::ClipItem>>,
     pub exported_at: String,
 }
 

@@ -92,6 +92,10 @@ impl Provider for FilesProvider {
         "files"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &["find", "open", "in"]
+    }
+
     fn search(&self, query: &Query, config: &Config) -> Vec<ResultItem> {
         let (needle, force) = match query.keyword.as_deref() {
             Some("find") | Some("open") | Some("in") => (query.argument.as_str(), true),

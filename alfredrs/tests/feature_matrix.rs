@@ -120,7 +120,7 @@ fn apps_desktop_parse_feature() {
     .unwrap();
     let app = parse_desktop_file(&path).unwrap();
     assert_eq!(app.name, "Forge");
-    assert_eq!(clean_exec(&app.exec).0, "forge");
+    assert_eq!(clean_exec(&app.exec).unwrap().0, "forge");
 }
 
 #[test]

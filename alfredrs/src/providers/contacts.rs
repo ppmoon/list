@@ -3,7 +3,7 @@
 use crate::config::Config;
 use crate::model::{Action, ItemKind, Query, ResultItem};
 use crate::providers::Provider;
-use crate::ranking::{data_dir, ensure_data_dir};
+use crate::paths::{data_dir, ensure_data_dir};
 use serde::{Deserialize, Serialize};
 use std::sync::Mutex;
 
@@ -104,6 +104,10 @@ pub fn parse_vcf(text: &str) -> Vec<Contact> {
 impl Provider for ContactsProvider {
     fn name(&self) -> &'static str {
         "contacts"
+    }
+
+    fn keywords(&self) -> &[&'static str] {
+        &["contact"]
     }
 
     fn search(&self, query: &Query, config: &Config) -> Vec<ResultItem> {

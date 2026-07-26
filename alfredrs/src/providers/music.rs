@@ -20,6 +20,10 @@ impl Provider for MusicProvider {
         "music"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &["music", "play", "pause", "next", "previous"]
+    }
+
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
         let needle = match query.keyword.as_deref() {
             Some("music") => query.argument.to_lowercase(),

@@ -6,8 +6,14 @@ use crate::providers::actions::action_label;
 use eframe::egui::{self, Color32, Key, RichText};
 
 pub fn run_launcher() -> eframe::Result<()> {
-    let engine = Engine::new().expect("engine init");
-    let theme = engine.config.theme.clone();
+    let engine = match Engine::new() {
+        Ok(engine) => engine,
+        Err(err) => {
+            eprintln!("alfredrs: failed to init engine: {err:#}");
+            return Ok(());
+        }
+    };
+    let theme = engine.theme().clone();
     let options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
             .with_inner_size([theme.window_width, theme.window_height])
@@ -22,7 +28,10 @@ pub fn run_launcher() -> eframe::Result<()> {
         options,
         Box::new(|cc| {
             apply_theme(&cc.egui_ctx, &theme);
-            Ok(Box::new(LauncherApp { engine, input: String::new() }))
+            Ok(Box::new(LauncherApp {
+                engine,
+                input: String::new(),
+            }))
         }),
     )
 }
@@ -35,7 +44,8 @@ fn apply_theme(ctx: &egui::Context, theme: &Theme) {
         theme.foreground[1],
         theme.foreground[2],
     ));
-    visuals.selection.bg_fill = Color32::from_rgb(theme.selection[0], theme.selection[1], theme.selection[2]);
+    visuals.selection.bg_fill =
+        Color32::from_rgb(theme.selection[0], theme.selection[1], theme.selection[2]);
     visuals.window_fill = visuals.panel_fill;
     ctx.set_visuals(visuals);
     let mut style = (*ctx.style()).clone();
@@ -61,15 +71,17 @@ impl eframe::App for LauncherApp {
     }
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if let Some(text) = self.engine.large_type.clone() {
+        if let Some(text) = self.engine.large_type_text().map(str::to_string) {
             self.draw_large_type(ctx, &text);
             return;
         }
 
         let accent = {
-            let t = &self.engine.config.theme;
+            let t = self.engine.theme();
             Color32::from_rgb(t.accent[0], t.accent[1], t.accent[2])
         };
+        let font_size = self.engine.theme().font_size;
+        let selection_rgb = self.engine.theme().selection;
 
         egui::CentralPanel::default().show(ctx, |ui| {
             ui.vertical_centered(|ui| {
@@ -77,7 +89,7 @@ impl eframe::App for LauncherApp {
                 ui.label(
                     RichText::new("alfredrs")
                         .color(accent)
-                        .size(self.engine.config.theme.font_size + 4.0)
+                        .size(font_size + 4.0)
                         .strong(),
                 );
                 ui.add_space(8.0);
@@ -93,17 +105,21 @@ impl eframe::App for LauncherApp {
 
             if response.changed() {
                 self.engine.set_query(self.input.clone());
+                // Sync input if snippet auto-expanded.
+                if self.engine.query() != self.input {
+                    self.input = self.engine.query().to_string();
+                }
             }
 
             ui.add_space(8.0);
             ui.separator();
 
+            let selected_idx = self.engine.selected();
             egui::ScrollArea::vertical().show(ui, |ui| {
-                for (idx, item) in self.engine.results.iter().enumerate() {
-                    let selected = idx == self.engine.selected;
+                for (idx, item) in self.engine.results().iter().enumerate() {
+                    let selected = idx == selected_idx;
                     let bg = if selected {
-                        let t = &self.engine.config.theme;
-                        Color32::from_rgb(t.selection[0], t.selection[1], t.selection[2])
+                        Color32::from_rgb(selection_rgb[0], selection_rgb[1], selection_rgb[2])
                     } else {
                         Color32::TRANSPARENT
                     };
@@ -113,13 +129,16 @@ impl eframe::App for LauncherApp {
                         .show(ui, |ui| {
                             ui.horizontal(|ui| {
                                 ui.label(RichText::new(&item.title).strong());
-                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                    ui.label(
-                                        RichText::new(format!("{:?}", item.kind))
-                                            .small()
-                                            .color(accent),
-                                    );
-                                });
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::Center),
+                                    |ui| {
+                                        ui.label(
+                                            RichText::new(format!("{:?}", item.kind))
+                                                .small()
+                                                .color(accent),
+                                        );
+                                    },
+                                );
                             });
                             if !item.subtitle.is_empty() {
                                 ui.label(RichText::new(&item.subtitle).weak().small());
@@ -182,9 +201,9 @@ impl LauncherApp {
         });
 
         if escape {
-            if self.engine.large_type.is_some() {
-                self.engine.large_type = None;
-            } else if self.engine.actions_mode {
+            if self.engine.large_type_text().is_some() {
+                self.engine.clear_large_type();
+            } else if self.engine.in_actions_mode() {
                 self.engine.exit_actions_mode();
             } else {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Close);
@@ -201,9 +220,7 @@ impl LauncherApp {
         }
         if activate {
             let _ = self.engine.activate();
-            if self.engine.large_type.is_none() && !self.engine.actions_mode {
-                // Keep window open for copy/calc; close for open/run.
-                // Heuristic: if query was calculator/snippet copy, stay; else close.
+            if self.engine.large_type_text().is_none() && !self.engine.in_actions_mode() {
                 if !self.input.starts_with('=')
                     && !self.input.starts_with("clip")
                     && !self.input.starts_with("snip")
@@ -227,7 +244,7 @@ impl LauncherApp {
             });
         });
         if ctx.input(|i| i.key_pressed(Key::Escape)) {
-            self.engine.large_type = None;
+            self.engine.clear_large_type();
         }
     }
 }

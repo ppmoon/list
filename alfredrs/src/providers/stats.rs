@@ -3,7 +3,8 @@
 use crate::config::Config;
 use crate::model::{Action, ItemKind, Query, ResultItem};
 use crate::providers::Provider;
-use crate::ranking::{data_dir, UsageStats};
+use crate::paths::data_dir;
+use crate::ranking::UsageStats;
 
 pub struct StatsProvider;
 
@@ -17,7 +18,7 @@ impl StatsProvider {
     }
 
     pub fn save(stats: &UsageStats) -> anyhow::Result<()> {
-        crate::ranking::ensure_data_dir()?;
+        crate::paths::ensure_data_dir()?;
         std::fs::write(
             data_dir().join("usage.json"),
             serde_json::to_string_pretty(stats)?,
@@ -29,6 +30,10 @@ impl StatsProvider {
 impl Provider for StatsProvider {
     fn name(&self) -> &'static str {
         "stats"
+    }
+
+    fn keywords(&self) -> &[&'static str] {
+        &["stats"]
     }
 
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {

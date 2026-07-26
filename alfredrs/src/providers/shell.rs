@@ -11,6 +11,10 @@ impl Provider for ShellProvider {
         "shell"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &[">"]
+    }
+
     fn search(&self, query: &Query, config: &Config) -> Vec<ResultItem> {
         if query.keyword.as_deref() != Some(">") {
             return Vec::new();

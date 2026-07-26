@@ -67,20 +67,39 @@ fn letter_code(ch: char) -> Option<Code> {
 }
 
 /// Block forever, launching the GUI whenever the configured hotkey is pressed.
+/// Also polls the system clipboard into alfredrs history (Clipboard History watch).
 pub fn run_daemon() -> anyhow::Result<()> {
+    use crate::providers::clipboard::ClipboardProvider;
+
     let config = Config::load_or_default()?;
     let hotkey = parse_hotkey(&config.hotkey)?;
     let manager = GlobalHotKeyManager::new().context("create hotkey manager")?;
     manager.register(hotkey).context("register hotkey")?;
-    eprintln!("alfredrs daemon listening for {}", config.hotkey);
+    eprintln!(
+        "alfredrs daemon listening for {} (clipboard watch on)",
+        config.hotkey
+    );
 
     let exe = std::env::current_exe().unwrap_or_else(|_| PathBuf::from("alfredrs"));
-    // Avoid recursive daemon: launch GUI with explicit flag.
     let receiver = GlobalHotKeyEvent::receiver();
+    let mut last_clip: Option<String> = None;
+    let mut ticks: u64 = 0;
     loop {
         if let Ok(event) = receiver.try_recv() {
             if event.state == HotKeyState::Pressed {
                 let _ = Command::new(&exe).arg("gui").spawn();
+            }
+        }
+        ticks += 1;
+        // Poll clipboard ~ every 500ms.
+        if ticks % 10 == 0 {
+            if let Ok(mut clipboard) = arboard::Clipboard::new() {
+                if let Ok(text) = clipboard.get_text() {
+                    if last_clip.as_ref() != Some(&text) {
+                        let _ = ClipboardProvider::push_text(&text, config.clipboard_max_items);
+                        last_clip = Some(text);
+                    }
+                }
             }
         }
         std::thread::sleep(Duration::from_millis(50));

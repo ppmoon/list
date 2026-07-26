@@ -5,7 +5,6 @@ use fuzzy_matcher::skim::SkimMatcherV2;
 use fuzzy_matcher::FuzzyMatcher;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use std::path::PathBuf;
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct UsageStats {
@@ -61,18 +60,6 @@ impl Ranker {
         items.sort_by(|a, b| b.score.cmp(&a.score).then_with(|| a.title.cmp(&b.title)));
         items
     }
-}
-
-pub fn data_dir() -> PathBuf {
-    dirs::data_dir()
-        .unwrap_or_else(|| PathBuf::from("."))
-        .join("alfredrs")
-}
-
-pub fn ensure_data_dir() -> anyhow::Result<PathBuf> {
-    let dir = data_dir();
-    std::fs::create_dir_all(&dir)?;
-    Ok(dir)
 }
 
 #[cfg(test)]

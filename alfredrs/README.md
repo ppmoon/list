@@ -23,12 +23,12 @@ Inspired by [Alfred for macOS](https://www.alfredapp.com). **Not affiliated with
 | Recent documents | ✅ | XDG `recently-used.xbel` |
 | Fallback searches | ✅ | Google / DuckDuckGo by default |
 | Usage stats | ✅ | `stats` keyword + CLI |
-| Clipboard history | ✅ | `clip` / `cb` |
-| Snippets | ✅ | `snip` / `;keyword` auto-expand |
+| Clipboard history | ✅ | `clip` / `cb`; daemon polls clipboard |
+| Snippets | ✅ | `snip` / `;keyword` auto-expands in launcher |
 | Workflows | ✅ | JSON graphs in data dir |
 | File buffer | ✅ | `buf` |
 | Themes | ✅ | Colours / fonts / sizes |
-| Preferences sync | ✅ | `alfredrs sync export\|import` |
+| Preferences sync | ✅ | export/import config, usage, snippets, workflows, contacts, clipboard |
 | Bookmarks | ✅ | Chrome JSON + Netscape HTML |
 | Contacts | ✅ | Local vCard |
 | Music control | ✅ | `playerctl` (Linux) |

@@ -81,6 +81,10 @@ impl Provider for SystemProvider {
         "system"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &["sys", "lock", "screensaver", "sleep", "suspend", "hibernate", "restart", "reboot", "shutdown", "halt", "logout", "emptytrash", "trash", "eject"]
+    }
+
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
         let needle = match query.keyword.as_deref() {
             Some("sys") => query.argument.to_lowercase(),

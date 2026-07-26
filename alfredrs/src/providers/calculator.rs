@@ -36,6 +36,10 @@ impl Provider for CalculatorProvider {
         "calculator"
     }
 
+    fn keywords(&self) -> &[&'static str] {
+        &["="]
+    }
+
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
         let expr = match query.keyword.as_deref() {
             Some("=") => query.argument.as_str(),

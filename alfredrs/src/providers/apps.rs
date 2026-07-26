@@ -120,7 +120,7 @@ pub fn parse_desktop_file(path: &Path) -> Option<DesktopApp> {
 }
 
 /// Strip FreeDesktop field codes (`%f`, `%U`, …) from Exec lines.
-pub fn clean_exec(exec: &str) -> (String, Vec<String>) {
+pub fn clean_exec(exec: &str) -> Option<(String, Vec<String>)> {
     let cleaned = exec
         .replace("%f", "")
         .replace("%F", "")
@@ -132,8 +132,11 @@ pub fn clean_exec(exec: &str) -> (String, Vec<String>) {
         .trim()
         .to_string();
     let mut parts = shell_words(&cleaned);
+    if parts.is_empty() {
+        return None;
+    }
     let program = parts.remove(0);
-    (program, parts)
+    Some((program, parts))
 }
 
 fn shell_words(s: &str) -> Vec<String> {
@@ -163,63 +166,27 @@ impl Provider for AppsProvider {
     }
 
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
-        // Skip when a dedicated keyword provider owns the query.
-        if matches!(
-            query.keyword.as_deref(),
-            Some(
-                "find"
-                    | "open"
-                    | "in"
-                    | "clip"
-                    | "cb"
-                    | "snip"
-                    | "sp"
-                    | "define"
-                    | "spell"
-                    | "sys"
-                    | "music"
-                    | "contact"
-                    | "bm"
-                    | "bookmark"
-                    | "large"
-                    | "buf"
-                    | "workflow"
-                    | "wf"
-                    | "stats"
-                    | ">"
-                    | "="
-            )
-        ) {
-            return Vec::new();
-        }
-        // Web keywords shouldn't compete here.
-        if query.keyword.is_some() && query.argument.is_empty() {
-            // bare keyword — still allow app matches on that token
-        }
-
-        let q = if query.keyword.is_none() {
-            query.raw.trim()
-        } else {
-            // e.g. unknown keyword treated as free text
-            query.raw.trim()
-        };
+        // Keyword ownership is enforced by ProviderSet; here we always search free text.
+        let q = query.raw.trim();
         if q.is_empty() {
             return Vec::new();
         }
 
         self.apps()
             .into_iter()
-            .map(|app| {
-                let (program, args) = clean_exec(&app.exec);
-                ResultItem::new(app.id.clone(), app.name.clone(), ItemKind::App)
-                    .with_subtitle(if app.comment.is_empty() {
-                        app.path.display().to_string()
-                    } else {
-                        app.comment.clone()
-                    })
-                    .with_icon(app.icon)
-                    .with_path(app.path)
-                    .with_actions(vec![Action::RunCommand { program, args }])
+            .filter_map(|app| {
+                let (program, args) = clean_exec(&app.exec)?;
+                Some(
+                    ResultItem::new(app.id.clone(), app.name.clone(), ItemKind::App)
+                        .with_subtitle(if app.comment.is_empty() {
+                            app.path.display().to_string()
+                        } else {
+                            app.comment.clone()
+                        })
+                        .with_icon(app.icon)
+                        .with_path(app.path)
+                        .with_actions(vec![Action::RunCommand { program, args }]),
+                )
             })
             .collect()
     }
@@ -242,7 +209,7 @@ mod tests {
         .unwrap();
         let app = parse_desktop_file(&path).unwrap();
         assert_eq!(app.name, "Demo App");
-        assert_eq!(clean_exec(&app.exec).0, "demo");
+        assert_eq!(clean_exec(&app.exec).unwrap().0, "demo");
     }
 
     #[test]

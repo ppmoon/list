@@ -102,7 +102,7 @@ fn load_firefox() -> Vec<Bookmark> {
         out.extend(parse_netscape_bookmarks(&text));
     }
     // Also accept a user-exported file in alfredrs data dir.
-    let exported = crate::ranking::data_dir().join("bookmarks.html");
+    let exported = crate::paths::data_dir().join("bookmarks.html");
     if let Ok(text) = std::fs::read_to_string(exported) {
         out.extend(parse_netscape_bookmarks(&text));
     }
@@ -143,6 +143,10 @@ pub fn parse_netscape_bookmarks(html: &str) -> Vec<Bookmark> {
 impl Provider for BookmarksProvider {
     fn name(&self) -> &'static str {
         "bookmarks"
+    }
+
+    fn keywords(&self) -> &[&'static str] {
+        &["bm", "bookmark"]
     }
 
     fn search(&self, query: &Query, _config: &Config) -> Vec<ResultItem> {
