@@ -140,14 +140,25 @@ impl Query {
             };
         }
 
+        // Trailing space after a single token → keyword mode with empty arg
+        // (Alfred-style: type `clip ` / `snip ` to open that feature).
+        let trailing_space = raw.ends_with(|c: char| c.is_whitespace());
         let mut parts = trimmed.splitn(2, char::is_whitespace);
         let first = parts.next().unwrap_or("").to_string();
         let rest = parts.next().unwrap_or("").to_string();
         if rest.is_empty() {
-            Self {
-                raw: trimmed.to_string(),
-                keyword: None,
-                argument: first,
+            if trailing_space {
+                Self {
+                    raw: trimmed.to_string(),
+                    keyword: Some(first),
+                    argument: String::new(),
+                }
+            } else {
+                Self {
+                    raw: trimmed.to_string(),
+                    keyword: None,
+                    argument: first,
+                }
             }
         } else {
             Self {
@@ -179,6 +190,13 @@ mod tests {
         let q = Query::parse("> echo hi");
         assert_eq!(q.keyword.as_deref(), Some(">"));
         assert_eq!(q.argument, "echo hi");
+    }
+
+    #[test]
+    fn trailing_space_enters_keyword_mode() {
+        let q = Query::parse("snip ");
+        assert_eq!(q.keyword.as_deref(), Some("snip"));
+        assert_eq!(q.argument, "");
     }
 
     #[test]
