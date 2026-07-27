@@ -27,7 +27,7 @@ Inspired by [Alfred for macOS](https://www.alfredapp.com). **Not affiliated with
 | Snippets | ✅ | `snip` / `;keyword` auto-expands in launcher |
 | Workflows | ✅ | JSON graphs in data dir |
 | File buffer | ✅ | `buf` |
-| Themes | ✅ | Colours / fonts / sizes |
+| Themes | ✅ | Default **Apple Glass** (frosted translucent); dark variant available |
 | Preferences sync | ✅ | export/import config, usage, snippets, workflows, contacts, clipboard |
 | Bookmarks | ✅ | Chrome JSON + Netscape HTML |
 | Contacts | ✅ | Local vCard |
@@ -40,8 +40,11 @@ Inspired by [Alfred for macOS](https://www.alfredapp.com). **Not affiliated with
 
 ```bash
 cd alfredrs
-cargo run --release
+cargo run --release            # GUI
+cargo run --release -- daemon  # hotkey + clipboard watch
 ```
+
+Override data directory (useful for tests): `ALFREDRS_DATA_DIR=/tmp/alfredrs-test`.
 
 CLI:
 
