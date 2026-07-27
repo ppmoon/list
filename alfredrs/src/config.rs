@@ -22,16 +22,34 @@ pub struct Theme {
 
 impl Default for Theme {
     fn default() -> Self {
+        // Apple frosted / liquid-glass light palette (Spotlight-adjacent).
         Self {
-            name: "Midnight Forge".into(),
-            background: [24, 26, 32],
-            foreground: [236, 239, 244],
-            accent: [94, 196, 168],
-            selection: [40, 48, 58],
-            font_size: 18.0,
-            window_width: 720.0,
-            window_height: 420.0,
-            corner_radius: 12.0,
+            name: "Apple Glass".into(),
+            background: [245, 247, 250],
+            foreground: [28, 28, 30],
+            accent: [0, 122, 255], // system blue
+            selection: [0, 122, 255],
+            font_size: 17.0,
+            window_width: 680.0,
+            window_height: 440.0,
+            corner_radius: 24.0,
+        }
+    }
+}
+
+impl Theme {
+    /// Dark liquid-glass variant.
+    pub fn dark_glass() -> Self {
+        Self {
+            name: "Apple Glass Dark".into(),
+            background: [28, 28, 32],
+            foreground: [245, 245, 247],
+            accent: [10, 132, 255],
+            selection: [10, 132, 255],
+            font_size: 17.0,
+            window_width: 680.0,
+            window_height: 440.0,
+            corner_radius: 24.0,
         }
     }
 }
